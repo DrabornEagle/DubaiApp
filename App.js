@@ -1,4 +1,4 @@
-// App.js — Dubai Journey PRO v4.8 (Single-file • No external dependencies)
+// App.js — Dubai Journey PRO v5.8 (Single-file • No external dependencies)
 // ✅ NEW: Save/Load system (NO deps)
 // - SaveApp: creates a snapshot (multi-save) in Local Storage (when available) + app’s main storage key
 // - LoadApp: loads any snapshot from local saves list
