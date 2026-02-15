@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "DrabornEagle",
+    "slug": "draborneagle",
+    "scheme": "draborneagle",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#070A12"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0
+    },
+    "android": {
+      "package": "com.draborneagle.dubai",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#070A12"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cf12031d-7441-4c54-9210-75c953df98c5"
+      }
+    }
+  }
+}
