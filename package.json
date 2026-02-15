@@ -1,6 +1,6 @@
 {
   "name": "dubaiapp",
-  "main": "expo/AppEntry",
+  "main": "index.js",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
