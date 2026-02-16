@@ -7,29 +7,20 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#070A12"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+
+    "assetBundlePatterns": ["**/*"],
+
     "updates": {
       "enabled": false,
       "fallbackToCacheTimeout": 0
     },
+
     "android": {
       "package": "com.draborneagle.dubai",
       "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#070A12"
-      }
-    },
-    "extra": {
-      "eas": {
-        "projectId": "cf12031d-7441-4c54-9210-75c953df98c5"
       }
     }
   }
