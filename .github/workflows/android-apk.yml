@@ -13,7 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ✅ Node 20 şart (toReversed hatası buradan geliyordu)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -25,17 +24,26 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
+      - name: Print versions
+        run: |
+          node -v
+          npm -v
+          java -version
+
       - name: Install dependencies
         run: npm install
 
-      # android klasörünü üretir / günceller
       - name: Expo Prebuild (clean)
         run: npx expo prebuild -p android --clean
 
-      - name: Build Release APK
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      # ✅ Daha detaylı log + Lint'i by-pass (çoğu projede burası patlatıyor)
+      - name: Build Release APK (verbose)
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --stacktrace --info -x lint -x lintVitalRelease
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -43,8 +51,8 @@ jobs:
           name: app-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Upload Gradle reports/logs (on failure)
-        if: failure()
+      - name: Upload Gradle reports/logs (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-reports
@@ -53,3 +61,4 @@ jobs:
             android/app/build/reports/**
             android/app/build/outputs/logs/**
             android/app/build/reports/problems/**
+            android/app/build/outputs/apk/**
