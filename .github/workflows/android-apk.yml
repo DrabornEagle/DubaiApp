@@ -1,79 +1,55 @@
-name: Android Standalone APK (Release)
+name: Build Android Release APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ "main" ]
 
 jobs:
   build-apk:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Expo/RN tarafı için en sorunsuz kombinasyon: Node 18
+      # ✅ Node 20 şart (toReversed hatası buradan geliyordu)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: |
-          npm --version
-          node --version
-          npm install --no-audit --no-fund --legacy-peer-deps
-
-      # android klasörünü üret (clean)
-      - name: Expo Prebuild (clean)
-        run: |
-          npx expo --version
-          npx expo prebuild -p android --clean
+          node-version: "20"
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          distribution: "temurin"
+          java-version: "17"
 
-      # Gradle cache (hız için)
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Install dependencies
+        run: npm install
 
-      # Build: burada gerçek hata yukarı satırlarda net çıkar
-      - name: Build Release APK (with logs)
-        env:
-          # Metro/Gradle RAM sıkışmalarını azaltır
-          NODE_OPTIONS: --max_old_space_size=4096
-          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx2g"
+      # android klasörünü üretir / günceller
+      - name: Expo Prebuild (clean)
+        run: npx expo prebuild -p android --clean
+
+      - name: Build Release APK
         run: |
           cd android
-          ./gradlew --version
-          ./gradlew clean
-          ./gradlew :app:assembleRelease --stacktrace --info
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK artifact
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
-      # Hata olursa rapor + logları mutlaka al
       - name: Upload Gradle reports/logs (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-reports-logs
+          name: gradle-reports
           path: |
-            android/app/build/reports/**
             android/build/reports/**
+            android/app/build/reports/**
             android/app/build/outputs/logs/**
-            android/.gradle/**/*
-            ~/.gradle/daemon/**/*
+            android/app/build/reports/problems/**
