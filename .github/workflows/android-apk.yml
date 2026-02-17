@@ -1,4 +1,4 @@
-name: Build Android Release APK
+name: Build Android APK (Release)
 
 on:
   workflow_dispatch:
@@ -13,66 +13,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Print versions
-        run: |
-          set -e
-          node -v
-          npm -v
-          java -version
-
       - name: Install dependencies
         run: |
-          set -e
-          npm install --no-audit --no-fund
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Expo Prebuild (clean)
-        run: |
-          set -e
-          npx expo prebuild -p android --clean
+        run: npx expo prebuild -p android --clean
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
-      # 🔥 En kritik kısım: gradle logunu dosyaya yazıyoruz
-      - name: Build Release APK (save logs)
+      - name: Build Release APK
         run: |
-          set -e
           cd android
-          ./gradlew assembleRelease \
-            --no-daemon \
-            --stacktrace \
-            --info \
-            --console=plain \
-            -x lint -x lintVitalRelease \
-            | tee ../gradle-build.log
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
 
-      # ✅ HATA OLSA BİLE logları yükle
-      - name: Upload build logs (always)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            gradle-build.log
-            android/build/reports/**
-            android/app/build/reports/**
-            android/app/build/outputs/logs/**
-            android/app/build/reports/problems/**
-
-      - name: Upload APK artifact (if exists)
-        if: always()
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload Gradle reports (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-reports
+          path: |
+            android/build/reports/**/*
+            android/app/build/reports/**/*
