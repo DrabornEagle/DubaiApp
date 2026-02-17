@@ -13,7 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ✅ Node 20+ şart (toReversed hatası için)
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
@@ -27,39 +26,53 @@ jobs:
 
       - name: Print versions
         run: |
+          set -e
           node -v
           npm -v
           java -version
 
-      # ✅ lockfile yoksa bile çalışsın diye npm install
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          set -e
+          npm install --no-audit --no-fund
 
       - name: Expo Prebuild (clean)
-        run: npx expo prebuild -p android --clean
+        run: |
+          set -e
+          npx expo prebuild -p android --clean
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build Release APK (verbose)
+      # 🔥 En kritik kısım: gradle logunu dosyaya yazıyoruz
+      - name: Build Release APK (save logs)
         run: |
+          set -e
           cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace --info -x lint -x lintVitalRelease
+          ./gradlew assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            --info \
+            --console=plain \
+            -x lint -x lintVitalRelease \
+            | tee ../gradle-build.log
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload Gradle reports/logs (always)
+      # ✅ HATA OLSA BİLE logları yükle
+      - name: Upload build logs (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-reports
+          name: build-logs
           path: |
+            gradle-build.log
             android/build/reports/**
             android/app/build/reports/**
             android/app/build/outputs/logs/**
             android/app/build/reports/problems/**
-            android/app/build/outputs/apk/**
+
+      - name: Upload APK artifact (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
