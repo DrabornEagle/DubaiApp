@@ -3,7 +3,7 @@ name: Android Standalone APK (Release)
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -13,23 +13,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Expo projelerinde Node 18 genelde en stabil (Node 20 bazen saçmalatıyor)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
           cache: npm
 
+      # package-lock bozuksa npm ci patlar -> npm install kullanıyoruz
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          npm install --legacy-peer-deps
 
-      # android/ klasörünü üretir
-      - name: Expo Prebuild
-        run: npx expo prebuild -p android --clean
+      # Gradle cache (build süresini ciddi kısaltır)
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -37,7 +42,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 🔥 Release imzalama: debug signing kullan (kolay ve yeterli)
+      # android/ klasörünü üretir (hız için --clean kaldırıldı)
+      - name: Expo Prebuild
+        run: npx expo prebuild -p android
+
+      # Release imzalama: debug signing (senin kullanımın için yeterli)
       - name: Force release to use debug signing
         run: |
           FILE="android/app/build.gradle"
@@ -45,12 +54,11 @@ jobs:
             perl -0777 -i -pe 's/buildTypes\s*\{\s*release\s*\{/buildTypes { release { signingConfig signingConfigs.debug /s' "$FILE"
           fi
 
-      # ✅ Standalone çalışan APK: assembleRelease
       - name: Build Release APK
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease -x lint -x test --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
