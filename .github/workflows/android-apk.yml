@@ -13,7 +13,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      # ✅ Node 20+ şart (toReversed hatası için)
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -30,8 +31,9 @@ jobs:
           npm -v
           java -version
 
+      # ✅ lockfile yoksa bile çalışsın diye npm install
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Expo Prebuild (clean)
         run: npx expo prebuild -p android --clean
@@ -39,7 +41,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # ✅ Daha detaylı log + Lint'i by-pass (çoğu projede burası patlatıyor)
       - name: Build Release APK (verbose)
         run: |
           cd android
