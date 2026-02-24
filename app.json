@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "DrabornEagle",
+    "slug": "draborneagle",
+    "scheme": "draborneagle",
+    "version": "6.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#070A12"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#070A12"
+        }
+      ]
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0
+    },
+    "android": {
+      "package": "com.draborneagle.dubai",
+      "versionCode": 6,
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#070A12"
+      },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#070A12"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
