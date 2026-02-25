@@ -626,7 +626,7 @@ async function saveSnapshotToFile(name, state) {
   if (!json) return null;
 
   // ✅ Always write into app sandbox first (no permissions required)
-  const base = FS.documentDirectory || FS.cacheDirectory;
+  const base = FS.cacheDirectory || FS.documentDirectory;
   if (!base) return null;
 
   const dir = base + "DubaiAppBackups/";
@@ -643,7 +643,7 @@ async function saveSnapshotToFile(name, state) {
   } catch {
     // fallback: cache root
     try {
-      const altBase = FS.cacheDirectory || FS.documentDirectory;
+      const altBase = FS.documentDirectory || FS.cacheDirectory;
       if (!altBase) return null;
       const altUri = altBase + filename;
       await FS.writeAsStringAsync(altUri, json, { encoding: FS.EncodingType?.UTF8 || undefined });
@@ -918,6 +918,19 @@ function safeJSONStringify(obj) {
       return null;
     }
   }
+}
+
+
+// ✅ Stable shuffle (Fisher–Yates) — used by mini games
+function listShuffle(arr) {
+  const a = Array.isArray(arr) ? arr.slice() : [];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = a[i];
+    a[i] = a[j];
+    a[j] = tmp;
+  }
+  return a;
 }
 
 function startOfMonth(d = new Date()) {
@@ -1583,31 +1596,52 @@ function getStockLogoUrl(symbol) {
 
 function StockLogo({ symbol, theme, size = 38 }) {
   const sym = String(symbol || "").toUpperCase();
-  const dom = STOCK_DOMAIN_MAP[sym];
+  const dom = STOCK_DOMAIN_MAP[sym] || STOCK_DOMAIN_MAP[sym.replace(".", "-")] || STOCK_DOMAIN_MAP[sym.replace("-", ".")];
+
+  // Multi-source fallback (no API key)
+  // 1) IEX static logos (often works): https://storage.googleapis.com/iex/api/logos/AAPL.png
+  // 2) Clearbit domain logo
+  // 3) Google favicon
   const urls = [];
+  const iexSym = sym.replace(/-/g, ".");
+  urls.push(`https://storage.googleapis.com/iex/api/logos/${encodeURIComponent(iexSym)}.png`);
   if (dom) {
-    urls.push(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=128`);
     urls.push(`https://logo.clearbit.com/${encodeURIComponent(dom)}?size=128`);
+    urls.push(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=128`);
   }
 
   const [u, setU] = useState(0);
   const url = urls[u] || null;
-  const initials = String(symbol || "?").replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  const initials = String(sym || "?").replace(/[^A-Z0-9]/g, "").slice(0, 4) || "?";
 
   return (
-    <View style={{ width: size, height: size, borderRadius: Math.round(size * 0.34), overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: theme.stroke }}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.34),
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.06)",
+        borderWidth: 1,
+        borderColor: theme.stroke,
+      }}
+    >
       {url ? (
         <Image
           source={{ uri: url }}
           style={{ width: size, height: size }}
-          resizeMode="cover"
+          resizeMode="contain"
           onError={() => {
             if (u + 1 < urls.length) setU(u + 1);
             else setU(999);
           }}
         />
       ) : (
-        <Text style={{ color: theme.sub, fontWeight: "900", fontSize: Math.max(10, Math.round(size * 0.28)) }}>{initials}</Text>
+        <Text style={{ color: theme.sub, fontWeight: "900", fontSize: Math.max(10, Math.round(size * 0.28)) }}>
+          {initials}
+        </Text>
       )}
     </View>
   );
@@ -2838,7 +2872,7 @@ async function handleSaveAppFile() {
   const nm = saveName.trim() || "SaveApp";
   const meta = await saveSnapshotToFile(nm, stateRef.current);
   if (meta) openToast("✅", "Yedek dosyası hazırlandı. Açılan ekrandan konumu seçip kaydedebilirsin.");
-  else openToast("⚠️", "Dosya oluşturulamadı. Expo modülleri eksik olabilir: expo-file-system + expo-sharing. Termux’ta: npx expo install expo-file-system expo-sharing");
+  else openToast("⚠️", "Dosya oluşturulamadı. Büyük ihtimalle expo-file-system yok / bağlanmadı. Termux: npx expo install expo-file-system expo-sharing expo-document-picker");
 }
 
 async function handleLoadAppFile() {
@@ -5831,7 +5865,6 @@ function GamesHub({ theme, t, S, setPatch, onToast }) {
     { k: "rps", name: "Taş Kağıt Makas", icon: "✊", desc: "AI vs • win streak" },
     { k: "memory", name: "Memory Match", icon: "🃏", desc: "Eşleştir • daha az hamle" },
     { k: "ttt", name: "Tic Tac Toe", icon: "❎", desc: "AI vs • hızlı maç" },
-,
 { k: "aim", name: "Aim Trainer", icon: "🎯", desc: "20 saniye • hedef vur • skor" },
 { k: "color", name: "Color Tap", icon: "🟣", desc: "30 saniye • doğru rengi seç" },
 { k: "flip", name: "Coin Flip", icon: "🪙", desc: "streak kas • yazı/tura" },
@@ -7096,7 +7129,6 @@ function SaveLoadModal({
 }
 
 function BackupCodeModal({ open, theme, t, mode, text, setText, onClose, onApply }) {
-({ open, theme, t, mode, text, setText, onClose, onApply }) {
   const isExport = mode === "export";
   return (
     <Modal transparent visible={open} animationType="fade" onRequestClose={onClose}>
